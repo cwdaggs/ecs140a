@@ -18,6 +18,16 @@ bool isOperator(string op) {
 	return false;
 }
 
+bool isBinaryOperator(string op) {
+	string valid_ops[] = {"+", "-", "*", "/", "**"};
+	for (int i = 0; i < 7; i++) {
+		if(valid_ops[i] == op) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool isMultiplication(string op) {
 	return (int(op[0]) == 42 && (op.length() == 1));
 }
@@ -69,7 +79,20 @@ void determineOrder(string *strs, int size, vector<string> &ops) {
 			}
 			if (counter > 0) {
 				// Move in front of two operands
-				ops.insert(ops.begin() + i - 2, ops[i]);
+				int next = 0;
+				while ((i - 3 - next) >= 0) {
+					if(isOperator(ops[i - 3 - next])) {
+						next++;
+					} else {
+						if (next == 0) {
+							ops.insert(ops.begin() + i - 2 - next, ops[i]);
+						} else {
+							ops.insert(ops.begin() + i - 3 - next, ops[i]);
+						}
+						break;
+					}
+				}
+				
 				// This positioning depends on whether binary or unary
 				ops.erase(ops.begin() + i + 1);
 			}
@@ -118,27 +141,29 @@ double rpn(string strs[], int size) {
 	return result;
 }
 
-void printParentheses(string *strs, int size) {
+void printParentheses(string *strs, int size, vector<string> &ops, int num_ops) {
 	int tab_count = 0;
 	int consecutive_nums = 0;
-	std::stack<string> ops;
-	for (int i = 0; i < size; i++) {
-		ops.push(strs[i]);
-	}
-	for (int i = size - 1; i >= 0; i--) {
+	int close_parentheses = 0;
+	int nums_left = 0;
+	string previous_op;
+	// pass in number of ops, make while loop that counts up when putting closing parentheses
+	// need some counter to keep track of closing parentheses like in determining order ex: consec = 0 and counter at 1 (meaning 1 number still unaccounted for)
+	while (close_parentheses != num_ops) {
 		for (int j = 0; j < tab_count; j++){
 			cout << "\t";
 		}
-		if (isOperator(ops.top())) {
-			cout << "(" << ops.top() << endl;
+		if (isOperator(ops.front()) && !ops.empty()) {
+			cout << "(" << ops.front() << endl;
 			tab_count++;
-			
+			consecutive_nums = 0;
+			previous_op = ops.front();
 		}
-		if (isNum(ops.top())) {
-			cout << ops.top() << endl;
+		if (isNum(ops.front()) && !ops.empty()) {
+			cout << ops.front() << endl;
 			consecutive_nums++;
 		}
-		if (consecutive_nums == 2 || ops.empty()) { // or stack empty
+		if ((consecutive_nums == 2 && isBinaryOperator(previous_op)) || (consecutive_nums == 1 && !isBinaryOperator(previous_op)) || ops.empty()) { 
 			consecutive_nums = 0;
 			if (tab_count > 0) {
 				tab_count--;
@@ -147,19 +172,32 @@ void printParentheses(string *strs, int size) {
 				cout << "\t";
 			}
 			cout << ")" << endl;
+			close_parentheses++;
+			if (tab_count > 0) {
+				tab_count--;
+				for (int j = 0; j < tab_count; j++){
+					cout << "\t";
+				}
+				cout << ")" << endl;
+				close_parentheses++;
+			}
 		}
-		ops.pop();
+		if (!ops.empty()) {
+			ops.erase(ops.begin());
+		}
 	}
 }
 
 int main() {
 	string test[] = {"2", "12", "6", "-", "/", "5", "3", "+", "*"}; 
+	// string test[] = {"2", "3", "4", "5", "-", "/", "+"};
+	// string test[] = {"1", "2", "3", "4", "+", "-", "5", "6", "7", "+", "-", "+", "-"};
 	// string test[] = {"2.4", "<"}; 
 	double result = rpn(test, sizeof(test)/sizeof(test[0]));
 	cout << result << endl;
-	// Need to return vector or pass in
 	vector<string> testvec;
 	determineOrder(test, sizeof(test)/sizeof(test[0]), testvec);
-	printParentheses(test, sizeof(test)/sizeof(test[0]), testvec);
+	int num_ops = 6;
+	printParentheses(test, sizeof(test)/sizeof(test[0]), testvec, num_ops);
 	return 0;
 }
