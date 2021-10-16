@@ -18,6 +18,32 @@ bool isOperator(string op) {
 	return false;
 }
 
+int countOperators(string *ops, int size) {
+	string valid_ops[] = {"+", "-", "*", "/", "**", "<", ">"};
+	int count = 0;
+	for (int j = 0; j < 7; j++) {
+		for (int i = 0; i < size; i++) {
+			if(valid_ops[j] == ops[i]) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
+int countOperands(string *ops, int size) {
+	string valid_ops[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+	int count = 0;
+	for (int j = 0; j < 10; j++) {
+		for (int i = 0; i < size; i++) {
+			if(valid_ops[j] == ops[i]) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+
 bool isBinaryOperator(string op) {
 	string valid_ops[] = {"+", "-", "*", "/", "**"};
 	for (int i = 0; i < 7; i++) {
@@ -52,21 +78,22 @@ bool isCeiling(string op) {
 	return (int(op[0]) == 62);
 }
 
-void determineOrder(string *strs, int size, vector<string> &ops) {
+void determineOrder(string *strs, int size, vector<string> &ops, int num_operands) {
 	for (int i = 0; i < size; i++) {
 		ops.push_back(strs[i]);
 	}
 	int counter = 0;
+	vector<int> indexes;
 	for (int i = 0; i < size; i++) {
 		if (isNum(ops[i])) {
 			counter++;
 		}
-	if (isOperator(ops[i])) {
-		if (isFloor(ops[i]) || isCeiling(ops[i])) {
-			counter--;
-		} else {
-			counter = counter - 2;
-		}
+		if (isOperator(ops[i])) {
+			if (isFloor(ops[i]) || isCeiling(ops[i])) {
+				counter--;
+			} else {
+				counter = counter - 2;
+			}
 
 			if (counter < 0) {
 				break;
@@ -80,16 +107,28 @@ void determineOrder(string *strs, int size, vector<string> &ops) {
 			if (counter > 0) {
 				// Move in front of two operands
 				int next = 0;
-				while ((i - 3 - next) >= 0) {
-					if(isOperator(ops[i - 3 - next])) {
-						next++;
-					} else {
-						if (next == 0) {
-							ops.insert(ops.begin() + i - 2 - next, ops[i]);
+				if (indexes.size() + 1 == num_operands) {
+					ops.insert(ops.begin() + 1, ops[i]);
+				} else {
+					while ((i - 3 - next) >= 0) {
+						if(isOperator(ops[i - 3 - next]) || count(indexes.begin(), indexes.end(), (i - 3 - next))) {
+							next++;
 						} else {
-							ops.insert(ops.begin() + i - 3 - next, ops[i]);
+							if (next == 0) {
+								indexes.push_back(i - 1);
+								indexes.push_back(i - 2);
+								ops.insert(ops.begin() + i - 2 - next, ops[i]);
+							} else {
+								indexes.push_back(i - 3 - next);
+								ops.insert(ops.begin() + i - 3 - next, ops[i]);
+							}
+							break;
 						}
-						break;
+					}
+					for (int j = 0; j < indexes.size(); j++) {
+						if (indexes[j] > (i - 3)) {
+							indexes[j]++;
+						}
 					}
 				}
 				
@@ -147,10 +186,8 @@ void printParentheses(string *strs, int size, vector<string> &ops, int num_ops) 
 	int close_parentheses = 0;
 	int nums_left = 0;
 	string previous_op;
-	// pass in number of ops, make while loop that counts up when putting closing parentheses
-	// need some counter to keep track of closing parentheses like in determining order ex: consec = 0 and counter at 1 (meaning 1 number still unaccounted for)
 	while (close_parentheses != num_ops) {
-		for (int j = 0; j < tab_count; j++){
+		for (int j = 0; j < tab_count && !ops.empty(); j++){
 			cout << "\t";
 		}
 		if (isOperator(ops.front()) && !ops.empty()) {
@@ -189,15 +226,17 @@ void printParentheses(string *strs, int size, vector<string> &ops, int num_ops) 
 }
 
 int main() {
-	string test[] = {"2", "12", "6", "-", "/", "5", "3", "+", "*"}; 
+	// string test[] = {"2", "12", "6", "-", "/", "5", "3", "+", "*"}; 
 	// string test[] = {"2", "3", "4", "5", "-", "/", "+"};
 	// string test[] = {"1", "2", "3", "4", "+", "-", "5", "6", "7", "+", "-", "+", "-"};
 	// string test[] = {"2.4", "<"}; 
+	string test[] = {"2", "12", "-"};
 	double result = rpn(test, sizeof(test)/sizeof(test[0]));
 	cout << result << endl;
 	vector<string> testvec;
-	determineOrder(test, sizeof(test)/sizeof(test[0]), testvec);
-	int num_ops = 6;
+	int num_operands = countOperands(test, sizeof(test)/sizeof(test[0]));
+	determineOrder(test, sizeof(test)/sizeof(test[0]), testvec, num_operands);
+	int num_ops = countOperators(test, sizeof(test)/sizeof(test[0]));
 	printParentheses(test, sizeof(test)/sizeof(test[0]), testvec, num_ops);
 	return 0;
 }
