@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <exception>
 using namespace std;
 
 bool isNum(string val);
@@ -19,7 +20,8 @@ bool isDivision(string op);
 bool isAddition(string op);
 bool isFloor(string op);
 bool isCeiling(string op);
+void validateStrings(string *ops, int size);
 
-void determineOrder(string *strs, int size, vector<string> &ops, int num_operands);
+void determineOrder(string *strs, int size, stack<vector<string>> &ops, int num_operands);
 double rpn(string strs[], int size);
-void printParentheses(string *strs, int size, vector<string> &ops, int num_ops);
+// void printParentheses(string *strs, int size, stack<vector<string>> &ops, int num_ops);
