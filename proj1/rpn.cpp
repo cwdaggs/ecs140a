@@ -80,38 +80,38 @@ void validateStrings(string *ops, int size) {
 	}
 }
 
-void determineOrder(string *strs, int size, stack<vector<string>> &ops_stack, int num_operands) {
+void determineOrder(string *strs, int size, stack<string> &ops_stack, int num_operands) {
 	for (int i = 0; i < size; i++) {
 		if (isNum(strs[i])) {
-			vector<string> temp;
-			temp.emplace_back((string) strs[i]);
-			ops_stack.push(temp);
+			ops_stack.push(strs[i]);
 		} else if (isBinaryOperator(strs[i])) {
-			vector<string> operand1;
-			vector<string> operand2;
-			vector<string> op;
-			operand1.emplace_back(ops_stack.top());
+			string operand1;
+			string operand2;
+			string op;
+			operand1 = ops_stack.top();
 			ops_stack.pop();
-			operand2.emplace_back(ops_stack.top());
+			operand2 = ops_stack.top();
 			ops_stack.pop();
-			op.emplace_back(strs[i]);
-			vector<string> all_ops;
-			all_ops.reserve(operand1.size() + operand2.size() + op.size());
-			all_ops.insert(all_ops.end(), op.begin(), op.end());
-			all_ops.insert(all_ops.end(), operand2.begin(), operand2.end());
-			all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
-			ops_stack.push(all_ops);
+			string temp = "(" + strs[i] + " " + operand2 + " " + operand1 + " " + ")";
+			// op.emplace_back(strs[i]);
+			// vector<string> all_ops;
+			// all_ops.reserve(operand1.size() + operand2.size() + op.size());
+			// all_ops.insert(all_ops.end(), op.begin(), op.end());
+			// all_ops.insert(all_ops.end(), operand2.begin(), operand2.end());
+			// all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
+			ops_stack.push(temp);
 		} else {
-			vector<string> operand1;
-			vector<string> op;
-			operand1.emplace_back(ops_stack.top());
+			string operand1;
+			string op;
+			operand1 = ops_stack.top();
 			ops_stack.pop();
-			op.emplace_back(strs[i]);
-			vector<string> all_ops;
-			all_ops.reserve(operand1.size() + op.size());
-			all_ops.insert(all_ops.end(), op.begin(), op.end());
-			all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
-			ops_stack.push(all_ops);
+			string temp = strs[i] + " " + operand1;
+			// op.emplace_back(strs[i]);
+			// vector<string> all_ops;
+			// all_ops.reserve(operand1.size() + op.size());
+			// all_ops.insert(all_ops.end(), op.begin(), op.end());
+			// all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
+			ops_stack.push(temp);
 		}
 	}
 	// for (int i = 0; i < size; i++) {
@@ -289,9 +289,10 @@ int main() {
 		cout << "Exception: " << except << endl;
 	}
 	
-	stack<vector<string>> testvec;
+	stack<string> testvec;
 	int num_operands = countOperands(test, sizeof(test)/sizeof(test[0]));
 	determineOrder(test, sizeof(test)/sizeof(test[0]), testvec, num_operands);
+	istringstream ss(testvec.top());
 	int num_ops = countOperators(test, sizeof(test)/sizeof(test[0]));
 	// printParentheses(test, sizeof(test)/sizeof(test[0]), testvec, num_ops);
 	return 0;
