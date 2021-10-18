@@ -1,11 +1,16 @@
 #include "rpn.h"
 #include <iostream>
 
-bool isNum(string val) {
-	if (int(val[0]) >= 48 && int(val[0]) < 58) {
-		return true;
+bool isDouble(string val) {
+	bool isDouble;
+	double double_num;
+	try {
+		double_num = stod(val);
+		isDouble = true;
+	} catch (const invalid_argument& ia) {
+		isDouble = false;
 	}
-	return false;
+	return isDouble;
 }
 
 bool isOperator(string op) {
@@ -18,29 +23,9 @@ bool isOperator(string op) {
 	return false;
 }
 
-int countOperators(string *ops, int size) {
-	int count = 0;
-	for (int i = 0; i < size; i++) {
-		if(isOperator(ops[i])) {
-			count++;
-		}
-	}
-	return count;
-}
-
-int countOperands(string *ops, int size) {
-	int count = 0;
-	for (int i = 0; i < size; i++) {
-		if(isNum(ops[i])) {
-			count++;
-		}
-	}
-	return count;
-}
-
 bool isBinaryOperator(string op) {
 	string valid_ops[] = {"+", "-", "*", "/", "**"};
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 5; i++) {
 		if(valid_ops[i] == op) {
 			return true;
 		}
@@ -59,148 +44,100 @@ bool isExponent(string op) {
 bool isSubtraction(string op) {
 	return (int(op[0]) == 45);
 }
+
 bool isDivision(string op) {
 	return (int(op[0]) == 47);
 }
+
 bool isAddition(string op) {
 	return (int(op[0]) == 43);
 }
+
 bool isFloor(string op) {
 	return (int(op[0]) == 60);
 }
+
 bool isCeiling(string op) {
 	return (int(op[0]) == 62);
 }
 
+/* Ensures that the strings are only valid operators or operands */
 void validateStrings(string *ops, int size) {
 	for (int i = 0; i < size; i++) {
-		if(!isOperator(ops[i]) && !isNum(ops[i])) {
+		if(!isOperator(ops[i]) && !isDouble(ops[i])) {
 			throw "Invalid operator(s)/operand(s) detected";
 		}
 	}
 }
 
-void determineOrder(string *strs, int size, stack<string> &ops_stack, int num_operands) {
+/* Used https://stackoverflow.com/questions/789847/postfix-notation-validation 
+ for reference */
+void validatePostfixOrder(string *ops, int size) {
+	int counter = 0;
 	for (int i = 0; i < size; i++) {
-		if (isNum(strs[i])) {
+		if (isDouble(ops[i])) {
+			counter++;
+		} else if (!isBinaryOperator(ops[i])) {
+			counter--;
+		} else {
+			counter -= 2;
+		}
+
+		if (counter < 0) {
+			throw "Invalid postfix sequence";
+		}
+		if (isOperator(ops[i])) {
+			counter++;
+		}
+	}
+}
+
+/* Very similar to rpn, but rather than solving operations, creates string */
+void determinePrintingOrder(string *strs, int size, stack<string> &ops_stack) {
+	for (int i = 0; i < size; i++) {
+		string operand1;
+		string op;
+		if (isDouble(strs[i])) {
 			ops_stack.push(strs[i]);
-		} else if (isBinaryOperator(strs[i])) {
-			string operand1;
+		} else if (!isBinaryOperator(strs[i])) {
+			operand1 = ops_stack.top();
+			ops_stack.pop();
+			string temp = "(" + strs[i] + " " + operand1 + " " + ")";
+			ops_stack.push(temp);
+		} else {
 			string operand2;
-			string op;
 			operand1 = ops_stack.top();
 			ops_stack.pop();
 			operand2 = ops_stack.top();
 			ops_stack.pop();
 			string temp = "(" + strs[i] + " " + operand2 + " " + operand1 + " " + ")";
-			// op.emplace_back(strs[i]);
-			// vector<string> all_ops;
-			// all_ops.reserve(operand1.size() + operand2.size() + op.size());
-			// all_ops.insert(all_ops.end(), op.begin(), op.end());
-			// all_ops.insert(all_ops.end(), operand2.begin(), operand2.end());
-			// all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
-			ops_stack.push(temp);
-		} else {
-			string operand1;
-			string op;
-			operand1 = ops_stack.top();
-			ops_stack.pop();
-			string temp = strs[i] + " " + operand1;
-			// op.emplace_back(strs[i]);
-			// vector<string> all_ops;
-			// all_ops.reserve(operand1.size() + op.size());
-			// all_ops.insert(all_ops.end(), op.begin(), op.end());
-			// all_ops.insert(all_ops.end(), operand1.begin(), operand1.end());
 			ops_stack.push(temp);
 		}
 	}
-	// for (int i = 0; i < size; i++) {
-	// 	ops.push_back(strs[i]);
-	// }
-	// int counter = 0;
-	// vector<int> indexes;
-	// for (int i = 0; i < size; i++) {
-	// 	if (isNum(ops[i])) {
-	// 		counter++;
-	// 	}
-	// 	if (isOperator(ops[i])) {
-	// 		if (isFloor(ops[i]) || isCeiling(ops[i])) {
-	// 			counter--;
-	// 		} else {
-	// 			counter = counter - 2;
-	// 		}
-
-	// 		if (counter < 0) {
-	// 			throw "Invalid sequence- this is not a valid sequence in postfix notation";
-	// 		}
-	// 		if (counter == 0) {
-	// 			// Move to beginning
-	// 			ops.insert(ops.begin(), ops[i]);
-	// 			ops.erase(ops.begin() + i + 1);
-	// 		}
-	// 		if (counter > 0) {
-	// 			// Move in front of two operands
-	// 			int next = 0;
-	// 			if (indexes.size() + 1 == num_operands) {
-	// 				ops.insert(ops.begin() + 1, ops[i]);
-	// 			} else {
-	// 				while ((i - 3 - next) >= 0) {
-	// 					if(isOperator(ops[i - 3 - next]) || count(indexes.begin(), indexes.end(), (i - 3 - next))) {
-	// 						next++;
-	// 					} else {
-	// 						if (next == 0) {
-	// 							indexes.push_back(i - 1);
-	// 							indexes.push_back(i - 2);
-	// 							ops.insert(ops.begin() + i - 2 - next, ops[i]);
-	// 						} else {
-	// 							indexes.push_back(i - 3 - next);
-	// 							ops.insert(ops.begin() + i - 3 - next, ops[i]);
-	// 						}
-	// 						break;
-	// 					}
-	// 				}
-	// 				for (int j = 0; j < indexes.size(); j++) {
-	// 					if (indexes[j] > (i - 3)) {
-	// 						indexes[j]++;
-	// 					}
-	// 				}
-	// 			}
-				
-	// 			// This positioning depends on whether binary or unary
-	// 			ops.erase(ops.begin() + i + 1);
-	// 		}
-	// 		counter++;
-	// 	}
-	// }
-
 }
-
 
 double rpn(string strs[], int size) {
 	double result = 0.0;
-
-	stack<float> nums;
-	// error if only 1 input
+	stack<double> nums;
 	for (int i = 0; i < size; i++) {
-		if (isNum(strs[i])) {
+		if (isDouble(strs[i])) {
 			nums.push(stof(strs[i]));
 		} else {
-			float first_operand = nums.top();
+			double first_operand = nums.top();
 			nums.pop();
 			if (isFloor(strs[i])) {
 				nums.push(floor(first_operand));
 			} else if (isCeiling(strs[i])) {
 				nums.push(ceil(first_operand));
 			} else {
-				// error if nothing to pop
-				float second_operand = nums.top();
+				double second_operand = nums.top();
 				nums.pop();
 				if (isAddition(strs[i])) {
-					nums.push(first_operand + second_operand);
+					nums.push(second_operand + first_operand);
 				} else if (isSubtraction(strs[i])) {
 					nums.push(second_operand - first_operand);
 				} else if (isMultiplication(strs[i])) {
-					nums.push(first_operand * second_operand);
+					nums.push(second_operand * first_operand);
 				} else if (isDivision(strs[i])) {
 					if (first_operand == 0) {
 						throw "Division by zero";
@@ -208,7 +145,11 @@ double rpn(string strs[], int size) {
 						nums.push(second_operand / first_operand);
 					}
 				} else if (isExponent(strs[i])) {
-					if ((second_operand == 0 && first_operand == 0) || (second_operand == 0 && first_operand < 0)) {
+					int test_int = first_operand;
+					double test_double = first_operand - test_int;
+					if ((second_operand == 0 && first_operand == 0) || 
+						(second_operand == 0 && first_operand < 0) ||
+						(second_operand < 0 && test_double > 0)) {
 						throw "Exponentiation issue- invalid operand(s)";
 					} else {
 						nums.push(pow(second_operand, first_operand));
@@ -222,78 +163,40 @@ double rpn(string strs[], int size) {
 	return result;
 }
 
-// void printParentheses(string *strs, int size, vector<string> &ops, int num_ops) {
-// 	int tab_count = 0;
-// 	int consecutive_nums = 0;
-// 	int close_parentheses = 0;
-// 	int nums_left = 0;
-// 	string previous_op;
-// 	while (close_parentheses != num_ops) {
-// 		for (int j = 0; j < tab_count && !ops.empty(); j++){
-// 			cout << "\t";
-// 		}
-// 		if (isOperator(ops.front()) && !ops.empty()) {
-// 			cout << "(" << ops.front() << endl;
-// 			tab_count++;
-// 			consecutive_nums = 0;
-// 			previous_op = ops.front();
-// 		}
-// 		if (isNum(ops.front()) && !ops.empty()) {
-// 			cout << ops.front() << endl;
-// 			consecutive_nums++;
-// 		}
-// 		if ((consecutive_nums == 2 && isBinaryOperator(previous_op)) || (consecutive_nums == 1 && !isBinaryOperator(previous_op)) || ops.empty()) { 
-// 			consecutive_nums = 0;
-// 			if (tab_count > 0) {
-// 				tab_count--;
-// 			}
-// 			for (int j = 0; j < tab_count; j++){
-// 				cout << "\t";
-// 			}
-// 			cout << ")" << endl;
-// 			close_parentheses++;
-// 			if (tab_count > 0) {
-// 				tab_count--;
-// 				for (int j = 0; j < tab_count; j++){
-// 					cout << "\t";
-// 				}
-// 				cout << ")" << endl;
-// 				close_parentheses++;
-// 			}
-// 		}
-// 		if (!ops.empty()) {
-// 			ops.erase(ops.begin());
-// 		}
-// 	}
-// }
-
-int main() {
-	string test[] = {"2", "12", "6", "-", "/", "5", "3", "+", "*"}; 
-	// string test[] = {"2", "3", "4", "5", "-", "/", "+"};
-	// string test[] = {"1", "2", "3", "4", "+", "-", "5", "6", "7", "+", "-", "+", "-"};
-	// string test[] = {"2.4", "<"}; 
-	// string test[] = {"6", "0", "/"};
-	// string test[] = {"6", "dd"};
-	// string test[] = {"1", "2", "3", "+", "4", "5", "6", "*", "/", "7", ">", "+", "8", "9", "1", "<", "-", "-", "+", "/", "*"};
-
-	try {
-		validateStrings(test, sizeof(test)/sizeof(test[0]));
-	} catch (const char *except) {
-		cout << "Exception: " << except << endl;
+void printPostfix(string new_order) {
+	int tab_count = 0;
+	istringstream ss(new_order);
+	string temp;
+	while (ss >> temp) {
+		if (temp[0] == ')') {
+			tab_count--;
+		}
+		for (int i = 0; i < tab_count; i++) {
+			cout << "\t";
+		}
+		cout << temp << endl;
+		if (temp[0] == '(') {
+			tab_count++;
+		}
 	}
+}
+
+int main(int argc, char *argv[]) {
+	string test[] = {"2", "12", "6", "-", "/", "5", "3", "+", "*"};
+	int test_length = sizeof(test)/sizeof(test[0]);
 	double result;
 	try {
-		result = rpn(test, sizeof(test)/sizeof(test[0]));
-		cout << result << endl;
+		validateStrings(test, test_length);
+		validatePostfixOrder(test, test_length);
+		result = rpn(test, test_length);
+		cout << "Result: " << result << endl;
+		if (argc == 2 && string(argv[1]) == "-l") {
+			stack<string> printing_vec;
+			determinePrintingOrder(test, test_length, printing_vec);
+			printPostfix(printing_vec.top());
+		}
 	} catch (const char *except) {
 		cout << "Exception: " << except << endl;
 	}
-	
-	stack<string> testvec;
-	int num_operands = countOperands(test, sizeof(test)/sizeof(test[0]));
-	determineOrder(test, sizeof(test)/sizeof(test[0]), testvec, num_operands);
-	istringstream ss(testvec.top());
-	int num_ops = countOperators(test, sizeof(test)/sizeof(test[0]));
-	// printParentheses(test, sizeof(test)/sizeof(test[0]), testvec, num_ops);
 	return 0;
 }
