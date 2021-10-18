@@ -65,7 +65,7 @@ bool isCeiling(string op) {
 void validateStrings(string *ops, int size) {
 	for (int i = 0; i < size; i++) {
 		if(!isOperator(ops[i]) && !isDouble(ops[i])) {
-			throw "Invalid operator(s)/operand(s) detected";
+			throw invalid_argument("Invalid operator(s)/operand(s) detected");
 		}
 	}
 }
@@ -84,7 +84,7 @@ void validatePostfixOrder(string *ops, int size) {
 		}
 
 		if (counter < 0) {
-			throw "Invalid postfix sequence";
+			throw invalid_argument("Invalid postfix sequence");
 		}
 		if (isOperator(ops[i])) {
 			counter++;
@@ -140,7 +140,7 @@ double rpn(string strs[], int size) {
 					nums.push(second_operand * first_operand);
 				} else if (isDivision(strs[i])) {
 					if (first_operand == 0) {
-						throw "Division by zero";
+						throw domain_error("Division by zero");
 					} else {
 						nums.push(second_operand / first_operand);
 					}
@@ -150,7 +150,7 @@ double rpn(string strs[], int size) {
 					if ((second_operand == 0 && first_operand == 0) || 
 						(second_operand == 0 && first_operand < 0) ||
 						(second_operand < 0 && test_double > 0)) {
-						throw "Exponentiation issue- invalid operand(s)";
+						throw domain_error("Exponentiation issue- invalid operand(s)");
 					} else {
 						nums.push(pow(second_operand, first_operand));
 					}			
@@ -195,8 +195,8 @@ int main(int argc, char *argv[]) {
 			determinePrintingOrder(test, test_length, printing_vec);
 			printPostfix(printing_vec.top());
 		}
-	} catch (const char *except) {
-		cout << "Exception: " << except << endl;
+	} catch (exception &except) {
+		cout << "Exception: " << except.what() << endl;
 	}
 	return 0;
 }
